@@ -932,3 +932,59 @@ per instruction. Anchors, ids, scroll-mt, network animation, press,
 tokens: all untouched.
 
 Verified: `npx tsc --noEmit` clean.
+
+---
+
+# SCROLL REVEAL — the `once: true` delivery race
+
+Not a viewport-margin problem. Tightening `whileInView` margins (80 → 120 →
+`amount`) was the wrong lever and made the reveal *more* eager while leaving
+the actual failure mode intact: on a heavy section the IntersectionObserver
+can deliver its callback and the `whileInView` commit in the same frame the
+node is already in view, so the observer fires, Framer Motion advances past
+its start point, `once` closes the gate — and the element is left parked
+mid-animation at a fractional opacity instead of filling in. Fast scrolling
+through the SVG network and the language bars reproduced it most reliably;
+those two sections carry the heaviest per-frame work.
+
+`Reveal.tsx` now owns `useRevealOnScroll`, which ignores intersection state
+entirely and compares a monotonic scroll position against the element's
+document offset:
+
+- `scrollY` is sampled once per rAF tick and never derived from rects, so
+  the value cannot oscillate the way `getBoundingClientRect().top` does when
+  a transform is mid-flight on an ancestor;
+- the target threshold is measured in document coordinates (`offsetTop` plus
+  the offset parent's scroll chain), which is stable across the animation;
+- the gate latches open on the first tick that satisfies the threshold and
+  stays open, replacing `once` with an explicit monotonic boolean;
+- resize re-measures the target and keeps the current revealed state rather
+  than re-arming the animation.
+
+The visual contract is unchanged and deliberately so: opacity + `y`
+translation, ~0.7s, ease `[0.21, 0.47, 0.32, 0.98]`, and `RevealGroup`'s
+per-child stagger are all preserved. This swaps *when the trigger fires*, not
+how anything looks or how long it takes. `useReducedMotion` still sets
+`initial={false}` so reduced-motion visitors get the settled state on first
+paint rather than an animation.
+
+Applied to `WhatIDoSection`'s RSVP network group and `EducationSection`'s
+`LanguageBar`. `HeroSection` deliberately still uses `whileInView` — it is
+visible at first paint, so there is no scroll race to fix there.
+
+Verified: `npx tsc --noEmit` clean. 5 hostile runs at 900px jumps with a
+140ms settle (the timing that used to strand elements) → `stuck=0` every run.
+Sampled mid-transition opacities are fractional and all sections reach
+`opacity: 1` within 2s. Deep link `/home#contact` lands with every section
+revealed. Reduced-motion: 7/7 sections at `opacity: 1` with no residual
+transform.
+
+Note the reduced-motion check must assert a section count. An earlier version
+of the harness ran `.every()` over an empty `querySelectorAll` list against a
+dead dev server and reported a false pass; the assertion now fails closed.
+
+Known and untouched: a pre-existing hydration mismatch in
+`KineticButton.tsx` (server renders `opacity:0; scale(0.92)`, reduced-motion
+client renders `opacity:0`). Pre-existing, unrelated to this change, and left
+alone pending the owner's call — altering its initial styles would change the
+verified button entrance animation.
