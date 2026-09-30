@@ -42,7 +42,13 @@ export function HeroSection() {
               <Icon name="arrowUpRight" className="relative z-10 ml-1.5 inline h-3.5 w-3.5" />
             </KineticButton>
 
-            <KineticButton href="#projects" size="lg" tone="secondary">
+            <KineticButton
+              href="/cv_emploi.pdf"
+              download="cv_emploi.pdf"
+              ariaLabel="Download CV (PDF)"
+              size="lg"
+              tone="secondary"
+            >
               DOWNLOAD CV
               <Icon
                 name="download"

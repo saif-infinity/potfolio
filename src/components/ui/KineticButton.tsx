@@ -16,6 +16,13 @@ export type KineticButtonTone = "primary" | "secondary";
 
 type KineticButtonProps = {
   href?: string;
+  /**
+   * Filename the browser should save the href target as. Only meaningful with
+   * `href`, and only honoured same-origin — the `download` attribute is inert
+   * for cross-origin URLs. Use it for file delivery (e.g. a CV PDF) so the
+   * file saves to disk instead of navigating to a built-in PDF viewer.
+   */
+  download?: string;
   onClick?: (e: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
   children: ReactNode;
   className?: string;
@@ -267,6 +274,7 @@ function useKineticGL(
 
 export function KineticButton({
   href,
+  download,
   onClick,
   children,
   className = "",
@@ -313,6 +321,7 @@ export function KineticButton({
       <motion.a
         ref={setHost as unknown as Ref<HTMLAnchorElement>}
         href={href}
+        download={download}
         aria-label={ariaLabel}
         onClick={onClick as unknown as MouseEventHandler<HTMLAnchorElement>}
         className={cls}
