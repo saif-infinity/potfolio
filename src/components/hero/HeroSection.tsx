@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { site, mailto } from "@/data/site";
+import { site, mailto, safeSocials } from "@/data/site";
 import { Icon } from "@/components/icons";
 import { KineticButton } from "@/components/ui/KineticButton";
 
@@ -37,10 +37,16 @@ export function HeroSection() {
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-3">
-            <KineticButton href={mailto("Let's build something")} size="lg" tone="primary">
-              GET IN TOUCH
-              <Icon name="arrowUpRight" className="relative z-10 ml-1.5 inline h-3.5 w-3.5" />
-            </KineticButton>
+            {mailto("Let's build something") ? (
+              <KineticButton
+                href={mailto("Let's build something") ?? undefined}
+                size="lg"
+                tone="primary"
+              >
+                GET IN TOUCH
+                <Icon name="arrowUpRight" className="relative z-10 ml-1.5 inline h-3.5 w-3.5" />
+              </KineticButton>
+            ) : null}
 
             <KineticButton
               href="/cv_emploi.pdf"
@@ -112,7 +118,7 @@ export function HeroSection() {
 
       <div className="relative z-10 mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-5 lg:px-10">
         <ul className="flex items-center gap-1.5 rounded-full border border-hairline glass px-3 py-2.5">
-          {site.socials.map((social) => (
+          {safeSocials.map((social) => (
             <li key={social.label}>
               <a
                 href={social.href}
@@ -126,15 +132,17 @@ export function HeroSection() {
             </li>
           ))}
           <li className="mx-1 h-6 w-px bg-hairline" aria-hidden="true" />
-          <li>
-            <a
-              href={mailto()}
-              aria-label="Email"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/15 hover:text-primary hover:shadow-glow-sm"
-            >
-              <Icon name="mail" className="h-[18px] w-[18px]" />
-            </a>
-          </li>
+          {mailto() ? (
+            <li>
+              <a
+                href={mailto() ?? undefined}
+                aria-label="Email"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/15 hover:text-primary hover:shadow-glow-sm"
+              >
+                <Icon name="mail" className="h-[18px] w-[18px]" />
+              </a>
+            </li>
+          ) : null}
         </ul>
 
         <a

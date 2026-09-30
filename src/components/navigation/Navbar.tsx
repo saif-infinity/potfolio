@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { site } from "@/data/site";
+import { safeHref } from "@/lib/safeHref";
 import { Icon } from "@/components/icons";
 import { KineticButton } from "@/components/ui/KineticButton";
 
@@ -76,11 +77,13 @@ export function Navbar() {
         {/* Desktop links — centered by the 3-column grid above */}
         <ul className="hidden items-center gap-5 xl:flex">
           {site.nav.map((item) => {
+            const href = safeHref(item.href);
+            if (href === null) return null;
             const isActive = active === item.href;
             return (
               <li key={item.href}>
                 <a
-                  href={item.href}
+                  href={href}
                   className={`group relative block py-1 text-[11px] font-semibold tracking-widest2 transition-colors ${
                     isActive ? "text-primary" : "text-muted hover:text-fg"
                   }`}
@@ -141,18 +144,22 @@ export function Navbar() {
             className="overflow-hidden border-t border-hairline glass glass-strong xl:hidden"
           >
             <ul className="flex flex-col px-6 py-4">
-              {site.nav.map((item) => (
-                <li key={item.href}>
-                  <a
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-between border-b border-hairline py-4 text-sm font-semibold tracking-widest2 text-muted transition-colors hover:text-primary"
-                  >
-                    {item.label}
-                    <Icon name="arrowUpRight" className="h-4 w-4" />
-                  </a>
-                </li>
-              ))}
+              {site.nav.map((item) => {
+                const href = safeHref(item.href);
+                if (href === null) return null;
+                return (
+                  <li key={item.href}>
+                    <a
+                      href={href}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center justify-between border-b border-hairline py-4 text-sm font-semibold tracking-widest2 text-muted transition-colors hover:text-primary"
+                    >
+                      {item.label}
+                      <Icon name="arrowUpRight" className="h-4 w-4" />
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </motion.div>
         ) : null}

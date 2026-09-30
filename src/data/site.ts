@@ -4,6 +4,7 @@
  */
 
 import type { IconName } from "@/components/icons";
+import { safeHref } from "@/lib/safeHref";
 
 /**
  * `year` is OPTIONAL on purpose. The owner's CV dates only the CTF (2025); it
@@ -360,5 +361,18 @@ export const site = {
   },
 } as const;
 
-export const mailto = (subject = "Hello") =>
-  `mailto:${site.contact.email}?subject=${encodeURIComponent(subject)}`;
+/**
+ * Social links that survived the outbound allowlist. A rejected entry is
+ * dropped here so the hero and contact maps never render an anchor with an
+ * empty or unsafe href.
+ */
+export const safeSocials = site.socials.filter((social) => safeHref(social.href) !== null);
+
+/**
+ * Composes a `mailto:` link and runs it through the outbound allowlist, so a
+ * malformed or unexpected `site.contact.email` can never reach an anchor.
+ * Returns `null` when the result is not a permitted destination — call sites
+ * must handle that rather than substituting a dead `href="#"`.
+ */
+export const mailto = (subject = "Hello"): string | null =>
+  safeHref(`mailto:${site.contact.email}?subject=${encodeURIComponent(subject)}`);

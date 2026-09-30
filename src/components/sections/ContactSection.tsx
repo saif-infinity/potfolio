@@ -1,6 +1,7 @@
 "use client";
 
-import { site, mailto } from "@/data/site";
+import { site, mailto, safeSocials } from "@/data/site";
+import { safeHref } from "@/lib/safeHref";
 import { Icon } from "@/components/icons";
 import { Reveal } from "@/components/motion/Reveal";
 import { KineticButton } from "@/components/ui/KineticButton";
@@ -30,12 +31,18 @@ export function ContactSection() {
                     <p className="text-[10px] font-semibold tracking-widest2 text-muted">
                       EMAIL
                     </p>
-                    <a
-                      href={mailto()}
-                      className="break-all text-sm font-medium text-fg transition-colors hover:text-primary"
-                    >
-                      {site.contact.email}
-                    </a>
+                    {mailto() ? (
+                      <a
+                        href={mailto() ?? undefined}
+                        className="break-all text-sm font-medium text-fg transition-colors hover:text-primary"
+                      >
+                        {site.contact.email}
+                      </a>
+                    ) : (
+                      <span className="break-all text-sm font-medium text-fg">
+                        {site.contact.email}
+                      </span>
+                    )}
                   </div>
                 </li>
 
@@ -47,12 +54,16 @@ export function ContactSection() {
                     <p className="text-[10px] font-semibold tracking-widest2 text-muted">
                       PHONE
                     </p>
-                    <a
-                      href={`tel:${site.contact.phone.replace(/\s/g, "")}`}
-                      className="text-sm font-medium text-fg transition-colors hover:text-primary"
-                    >
-                      {site.contact.phone}
-                    </a>
+                    {safeHref(`tel:${site.contact.phone.replace(/\s/g, "")}`) ? (
+                      <a
+                        href={safeHref(`tel:${site.contact.phone.replace(/\s/g, "")}`) ?? undefined}
+                        className="text-sm font-medium text-fg transition-colors hover:text-primary"
+                      >
+                        {site.contact.phone}
+                      </a>
+                    ) : (
+                      <span className="text-sm font-medium text-fg">{site.contact.phone}</span>
+                    )}
                   </div>
                 </li>
 
@@ -75,7 +86,7 @@ export function ContactSection() {
                 FIND ME ONLINE
               </p>
               <ul className="mt-3 flex flex-wrap gap-2">
-                {site.socials.map((social) => (
+                {safeSocials.map((social) => (
                   <li key={social.label}>
                     <a
                       href={social.href}
@@ -105,13 +116,19 @@ export function ContactSection() {
             </p>
 
             <div className="mt-9 flex flex-wrap justify-end gap-3">
-              <KineticButton href={mailto("Hello Saifeddine")} size="lg" tone="primary">
-                {site.contact.email}
-                <Icon
-                  name="arrowUpRight"
-                  className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                />
-              </KineticButton>
+              {mailto("Hello Saifeddine") ? (
+                <KineticButton
+                  href={mailto("Hello Saifeddine") ?? undefined}
+                  size="lg"
+                  tone="primary"
+                >
+                  {site.contact.email}
+                  <Icon
+                    name="arrowUpRight"
+                    className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                  />
+                </KineticButton>
+              ) : null}
               <KineticButton href="#projects" size="lg" tone="secondary">
                 VIEW WORK
               </KineticButton>
