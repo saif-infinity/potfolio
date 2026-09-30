@@ -19,6 +19,12 @@ const lineLength = (line: Segment[]) => line.reduce((total, item) => total + ite
 /* backing-store ceiling: the composite is one triangle, so the cost that matters is
    the 2D screen redraw and its upload, not the fragment pass */
 const MAX_BUFFER_WIDTH = 1920, MIN_BUFFER_WIDTH = 640, MAX_BUFFER_PIXELS = 2_400_000;
+/* Typing rate in characters per SECOND, not per frame. Advancing `typed` per
+   frame ties the boot log to the frame rate: on a slow device or a throttled
+   background tab the log is still mid-line when the 6s auto-advance fires, so
+   the visitor only ever sees the unchanged header lines. ~260/s reproduces the
+   original 4.4-per-frame feel at 60fps while staying frame-rate independent. */
+const TYPE_CHARS_PER_SECOND = 260;
 function compile(gl: WebGLRenderingContext, type: number, source: string) { const shader = gl.createShader(type); if (!shader) throw new Error("Unable to create CRT shader"); gl.shaderSource(shader, source); gl.compileShader(shader); if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader) ?? "CRT shader compilation failed"); return shader; }
 
 export function createCrtRenderer(host: HTMLElement, canvas: HTMLCanvasElement, getOptions: () => CrtOptions) {
@@ -48,11 +54,17 @@ export function createCrtRenderer(host: HTMLElement, canvas: HTMLCanvasElement, 
   applyStyle();
   return {
     resize,
+    /**
+     * Jump straight to the finished boot log. Reduced motion skips the typing
+     * entirely rather than freezing part-way through it, which is what a fixed
+     * frame budget did once the typing rate became time-based.
+     */
+    complete() { if (done) return; typed = TOTAL; done = true; textDirty = true; },
     render(now: number) {
       const options = getOptions(), requested = CRT_STYLES[options.variant] ? options.variant : "terminal";
       if (requested !== variant) { variant = requested; style = crtStyle(variant); applyStyle(); typed = 0; done = false; lastReveal = -1; lastBlink = -1; lastTextAt = 0; resize(); }
       const seconds = (now - startedAt) * 0.001 * options.speed;
-      if (variant === "terminal") { if (!done) { typed += 4.4 * options.typeSpeed; if (typed >= TOTAL) { typed = TOTAL; done = true; } } maybeRedrawText(now); }
+      if (variant === "terminal") { if (!done) { typed = Math.min(TOTAL, (now - startedAt) * 0.001 * TYPE_CHARS_PER_SECOND * options.typeSpeed); if (typed >= TOTAL) { typed = TOTAL; done = true; } } maybeRedrawText(now); }
       else if (now - lastTextAt >= style.redrawMs || textDirty) { CRT_SCREENS[variant](textContext, width, height, seconds); lastTextAt = now; textDirty = true; }
       if (textDirty) uploadTexture();
       gl.useProgram(program); gl.uniform1f(uTime, seconds); gl.uniform1f(uMotion, options.motion); gl.drawArrays(gl.TRIANGLES, 0, 3);

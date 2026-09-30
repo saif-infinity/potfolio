@@ -23,9 +23,10 @@ export type CrtBackgroundProps = Partial<CrtOptions> & {
 };
 
 /**
- * Frames painted before freezing under `prefers-reduced-motion`. The boot log
- * types at ~4.4 chars/frame, so this is comfortably past the ~136 frames it
- * needs to settle on a complete screen.
+ * Frames painted before freezing under `prefers-reduced-motion`. The typing is
+ * skipped outright in that mode (see `renderer.complete()` in the tick below),
+ * so this budget only exists to let the finished screen settle rather than to
+ * outlast the typewriter.
  */
 const REDUCED_MOTION_FRAMES = 240;
 
@@ -102,6 +103,9 @@ export function CrtBackground({
         frame = 0;
         return;
       }
+      // Reduced motion: skip the typing outright so the freeze below always
+      // lands on a complete screen, whatever the frame rate happens to be.
+      if (reduceMotion) renderer.complete();
       renderer.render(now);
       framesDrawn += 1;
       // Reduced motion: settle on one complete frame, then stop for good.
