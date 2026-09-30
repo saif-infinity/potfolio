@@ -319,7 +319,7 @@ export const site = {
       qualification: "Higher Technician Diploma in Information Technology",
       org: "ISET de Gabès",
       speciality: "Network Security",
-      period: "2023 — 2026",
+      period: "2024 — 2026",
       note: "Graduated June 2026",
       subjects: [
         "System Administration",
@@ -331,7 +331,7 @@ export const site = {
     {
       qualification: "Baccalaureate, Technical Stream",
       org: "Lycée Ibn Majah, Médenine",
-      period: "2024",
+      period: "2023",
       note: "Mention Assez bien",
       subjects: [],
     },
