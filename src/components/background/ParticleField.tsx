@@ -28,7 +28,7 @@ export function ParticleField({ className = "", "aria-hidden": ariaHidden = true
     let nodes: ParticleNode[] = [];
     let beams: Beam[] = [];
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&*()'.split('');
-    let mouse = { x: -1000, y: -1000 };
+    const mouse = { x: -1000, y: -1000 };
 
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     let reduceMotion = motionQuery.matches;
@@ -81,7 +81,7 @@ export function ParticleField({ className = "", "aria-hidden": ariaHidden = true
           b.y = height + 100;
           b.x = Math.random() * width;
         }
-        let g = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.length);
+        const g = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.length);
         g.addColorStop(0, `rgba(0, 255, 65, ${b.opacity})`);
         g.addColorStop(1, 'transparent');
         ctx.strokeStyle = g;
@@ -98,10 +98,10 @@ export function ParticleField({ className = "", "aria-hidden": ariaHidden = true
 
       ctx.lineWidth = 0.5;
       for (let i = 0; i < nodes.length; i++) {
-        let n1 = nodes[i];
+        const n1 = nodes[i];
         for (let j = i + 1; j < nodes.length; j++) {
-          let n2 = nodes[j];
-          let d = Math.hypot(n1.x - n2.x, n1.y - n2.y);
+          const n2 = nodes[j];
+          const d = Math.hypot(n1.x - n2.x, n1.y - n2.y);
           if (d < 120) {
             ctx.strokeStyle = `rgba(74, 222, 128, ${0.15 * (1 - d / 120)})`;
             ctx.beginPath();
@@ -119,7 +119,7 @@ export function ParticleField({ className = "", "aria-hidden": ariaHidden = true
           n.x = Math.random() * width;
         }
 
-        let dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
+        const dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
 
         if (dist < 180 || Math.random() > 0.98) n.char = chars[Math.floor(Math.random() * chars.length)];
 
