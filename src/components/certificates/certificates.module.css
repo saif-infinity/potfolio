@@ -1,0 +1,68 @@
+/**
+ * Scoped styles for the inline 3D certificate cards.
+ * Everything else is Tailwind in AwardsSection.tsx. The site body already
+ * supplies film grain + vignette — no second overlays here.
+ */
+
+/* The single shared WebGL canvas. Transparent except the four scissored
+   paper viewports; sits above card backgrounds, below all page text
+   (text lives outside the stage rects by layout, so nothing is covered).
+   pointer-events:none: drag handling lives on the card stage elements. */
+.gl {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 30;
+  pointer-events: none;
+}
+
+/* Dedicated paper area inside each card. All card TEXT sits outside this
+   rect (below it), so the opaque paper never fights copy. */
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 0.9rem 0.9rem 0 0;
+  cursor: grab;
+  touch-action: pan-y;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 7, 58, 0.1) 0%, transparent 55%),
+    linear-gradient(180deg, #101016 0%, #08080c 100%);
+}
+
+.stage:active {
+  cursor: grabbing;
+}
+
+/* JS toggles this while a pointer is down (mirrors the source's .grabbing). */
+.stage:global(.cert-grabbing) {
+  cursor: grabbing;
+}
+
+/* Keep the paper reachable by keyboard users: the stage is focusable and
+   shows the site's accent ring. Drag affordance hint for touch. */
+.stage:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.hint {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.5rem;
+  font-family: var(--font-body), Inter, system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: rgba(245, 240, 235, 0.42);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage {
+    cursor: default;
+  }
+}

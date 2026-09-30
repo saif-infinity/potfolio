@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>3D Paper — Certificate</title>
+
+<!--
+  ============================================================================
+  FIDELITY ANCHOR — DO NOT "CLEAN UP", SIMPLIFY, OR REWRITE THE LOGIC BELOW.
+  ============================================================================
+  Provenance: standalone artifact pasted verbatim by the user on 2026-09-29.
+  The original inlined a minified build of Three.js r149 as a classic
+  <script> block. That vendored bundle was intentionally REMOVED from this
+  anchor file only. It is a third-party verbatim artifact, not authored
+  design, and is replaced by the npm package `three`.
+
+  Everything in the authored <script type="module"> block below is the user's
+  original source and must be ported, not reimagined. See reference/PORT-NOTES.md.
+
+  Original vendored library: three.js r149 (MIT, Ian MacLarty / three.js authors)
+  ============================================================================
+-->
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#08080c}
+  body{
+    touch-action:none;
+    overscroll-behavior:none;
+    font-family:Inter,system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  canvas#gl{display:block;width:100%;height:100%;cursor:grab}
+  canvas#gl.grabbing{cursor:grabbing}
+
+  #word{
+    position:fixed;left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    font-family:'Inter Tight',Inter,system-ui,sans-serif;
+    font-weight:700;
+    font-size:clamp(70px,19vw,270px);
+    letter-spacing:.05em;
+    color:#15151b;
+    opacity:.13;
+    pointer-events:none;
+    user-select:none;
+    white-space:nowrap;
+  }
+  #badge{
+    position:fixed;left:22px;bottom:20px;z-index:5;
+    font-size:11px;letter-spacing:.14em;color:#4a4a58;
+    text-transform:uppercase;user-select:none;
+  }
+  #hint{
+    position:fixed;right:22px;bottom:20px;z-index:5;
+    font-size:11px;letter-spacing:.06em;color:#5a5a6a;
+    font-style:italic;
+    font-family:'EB Garamond',Georgia,serif;
+    user-select:none;
+    transition:opacity 1s;
+  }
+
+  .grain,.vignette{position:fixed;inset:0;pointer-events:none}
+  .grain{
+    z-index:3;opacity:.055;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grainShift 8s steps(10) infinite;
+  }
+  @keyframes grainShift{
+    0%{transform:translate(0,0)}10%{transform:translate(-5%,-8%)}20%{transform:translate(-15%,5%)}
+    30%{transform:translate(7%,-25%)}40%{transform:translate(-5%,25%)}50%{transform:translate(-15%,10%)}
+    60%{transform:translate(15%,0%)}70%{transform:translate(0%,15%)}80%{transform:translate(3%,35%)}
+    90%{transform:translate(-10%,10%)}
+  }
+  .vignette{
+    z-index:4;
+    background:radial-gradient(ellipse 70% 60% at 50% 45%,transparent 40%,rgba(0,0,0,.55) 100%);
+  }
+  #gl{position:fixed;inset:0;z-index:1}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="word">NOCTURNE</div>
+<div class="grain"></div>
+<div class="vignette"></div>
+<div id="badge">3D Paper</div>
+<div id="hint">drag to turn · hover to light</div>
+
+<!-- [Three.js r149 vendored bundle omitted — replaced by npm `three` at 0.186.x] -->
+
+<script type="module">
+import * as T from 'three';
+
+/* ---------- config ---------- */
+const CFG = {
+  W: 1200, H: 1656,              // authoring grid of the certificate texture
+  canvasW: 1400, canvasH: 1932,  // texture resolution actually uploaded
+  segX: 72, segY: 96,            // sheet tessellation
+  tilt: -0.12,
+  turnSpeed: 2.2,
+  pull: 0.55,
+  bend: 0.05,
+  fold: 0.085,
+  camZ: 4.6,
+  lightZ: 2.4,
+  reduced: false,
+};
+const CERT = {
+  org:     'ORBIT SOCIETY OF DESIGN',
+  sub:     'INSTITUTE OF AESTHETIC INQUIRY',
+  name:    'Nocturne Studio',
+  meta:    'A certified space of quiet signal and considered form.',
+  dateLine:'THE FOURTEENTH OF FEBRUARY',
+  year:    'MMXXVI',
+  sig1:    'Ilya Marchetti',
+  role1:   'PRESIDENT',
+  sig2:    'Dara Okonkwo',
+  role2:   'SECRETARY',
+  ref:     'OSD-2026-0417',
+};
+
+/* ---------- 1. env map ---------- */
+function makeEnv() {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 512;
+  const x = c.getContext('2d');
+
+  const g = x.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0.00, '#1b1d2c');
+  g.addColorStop(0.42, '#3a3d54');
+  g.addColorStop(0.52, '#555870');
+  g.addColorStop(0.75, '#22222c');
+  g.addColorStop(1.00, '#0a0a0e');
+  x.fillStyle = g; x.fillRect(0, 0, 1024, 512);
+
+  // soft studio lights
+  const blob = (cx, cy, r, col, a) => {
+    const rg = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    rg.addColorStop(0, col); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    x.globalAlpha = a; x.fillStyle = rg;
+    x.fillRect(cx - r, cy - r, r * 2, r * 2); x.globalAlpha = 1;
+  };
+  blob(220,  150, 260, '#ffffff', 0.95);
+  blob(800,  120, 300, '#fff6e2', 0.60);
+  blob(520,  330, 340, '#8f8fa8', 0.30);
+  blob(940,  400, 180, '#ffe9c4', 0.35);
+
+  const t = new T.CanvasTexture(c);
+  t.mapping = T.EquirectangularReflectionMapping;
+  return t;
+}
+
+/* ---------- 2. parchment texture ---------- */
+function texture() {
+  const c = document.createElement('canvas');
+  c.width = CFG.canvasW; c.height = CFG.canvasH;
+  const x = c.getContext('2d');
+
+  // parchment base
+  const g = x.createLinearGradient(0, 0, CFG.canvasW, CFG.canvasH);
+  g.addColorStop(0.00, '#f7f0e2');
+  g.addColorStop(0.35, '#f0e6d2');
+  g.addColorStop(0.70, '#e9dcc3');
+  g.addColorStop(1.00, '#e2d2b4');
+  x.fillStyle = g; x.fillRect(0, 0, CFG.canvasW, CFG.canvasH);
+
+  // age blotches
+  for (let i = 0; i < 130; i++) {
+    const cx = Math.random() * CFG.canvasW;
+    const cy = Math.random() * CFG.canvasH;
+    const r = 30 + Math.random() * 190;
+    const rg = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    const dark = Math.random() > 0.5;
+    rg.addColorStop(0, dark ? 'rgba(150,116,72,0.055)' : 'rgba(255,250,238,0.06)');
+    rg.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = rg; x.fillRect(cx - r, cy - r, r * 2, r * 2);
+  }
+
+  // paper fibre
+  for (let i = 0; i < 2600; i++) {
+    const a = Math.random() * 0.05;
+    x.fillStyle = Math.random() > 0.5 ? `rgba(255,255,255,${a})` : `rgba(120,95,60,${a})`;
+    const w = 4 + Math.random() * 20;
+    x.fillRect(Math.random() * CFG.canvasW, Math.random() * CFG.canvasH, w, 1);
+  }
+
+  // ---- frame ----
+  const S = CFG.canvasW / CFG.W;               // scale factor
+  const px = v => v * S;
+  const ink = '#2b2118';
+  const gold = '#8a6a34';
+
+  const rule = (inset, w, col) => {
+    x.strokeStyle = col; x.lineWidth = px(w);
+    x.strokeRect(px(inset), px(inset), CFG.canvasW - px(inset * 2), CFG.canvasH - px(inset * 2));
+  };
+  rule(58, 2.5, ink);
+  rule(70, 1, gold);
+  rule(84, 0.6, 'rgba(43,33,24,0.5)');
+
+  // corner flourishes
+  const flourish = (fx, fy, sx, sy) => {
+    x.save(); x.translate(px(fx), px(fy)); x.scale(sx, sy);
+    x.strokeStyle = gold; x.lineWidth = px(1.6);
+    x.beginPath();
+    x.moveTo(0, px(30));
+    x.bezierCurveTo(px(6), px(12), px(18), px(4), px(34), px(0));
+    x.stroke();
+    x.beginPath();
+    x.moveTo(px(10), px(34));
+    x.bezierCurveTo(px(20), px(22), px(28), px(24), px(34), px(30));
+    x.stroke();
+    x.beginPath(); x.arc(px(34), px(30), px(2.4), 0, Math.PI * 2);
+    x.fillStyle = gold; x.fill();
+    x.restore();
+  };
+  flourish(84, 84, 1, 1);
+  flourish(CFG.W - 84, 84, -1, 1);
+  flourish(84, CFG.H - 84, 1, -1);
+  flourish(CFG.W - 84, CFG.H - 84, -1, -1);
+
+  // ---- ornaments ----
+  const laurel = (cx, cy, w, h) => {
+    const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140">
+      <g fill="none" stroke="#8a6a34" stroke-width="2.4" stroke-linecap="round">
+        <path d="M18 128 C 40 96, 66 74, 100 62 C 134 74, 160 96, 182 128"/>
+        <path d="M34 120 C 54 96, 76 80, 100 72 C 124 80, 146 96, 166 120" stroke-width="1.2" opacity="0.6"/>
+        <path d="M52 106 C 60 92, 70 84, 82 78"/>
+        <path d="M148 106 C 140 92, 130 84, 118 78"/>
+      </g>
+      <g fill="#8a6a34">
+        <ellipse cx="70" cy="86" rx="9" ry="4.4" transform="rotate(-32 70 86)"/>
+        <ellipse cx="92" cy="76" rx="9" ry="4.4" transform="rotate(-16 92 76)"/>
+        <ellipse cx="130" cy="86" rx="9" ry="4.4" transform="rotate(32 130 86)"/>
+        <ellipse cx="108" cy="76" rx="9" ry="4.4" transform="rotate(16 108 76)"/>
+        <circle cx="100" cy="60" r="4.6"/>
+        <path d="M100 52 l3.2 5.6 6 .8 -4.4 4.2 1.1 6 -5.9-3 -5.9 3 1.1-6 -4.4-4.2 6-.8z" opacity="0.85"/>
+      </g>
+    </svg>`;
+    const img = new Image();
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    return { img, cx: px(cx - w / 2), cy: px(cy - h / 2), w: px(w), h: px(h) };
+  };
+
+  const mark = (cx, cy, size) => {
+    const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#8a6a34" stroke-width="2"/>
+      <circle cx="50" cy="50" r="38" fill="none" stroke="#8a6a34" stroke-width="0.8" opacity="0.7"/>
+      <g stroke="#8a6a34" stroke-width="2.4" fill="none" stroke-linecap="round">
+        <path d="M50 20 L50 80"/>
+        <path d="M30 34 C 42 40, 58 40, 70 34"/>
+        <path d="M28 50 C 42 56, 58 56, 72 50"/>
+        <path d="M30 66 C 42 72, 58 72, 70 66"/>
+      </g>
+    </svg>`;
+    const img = new Image();
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    return { img, cx: px(cx - size / 2), cy: px(cy - size / 2), w: px(size), h: px(size) };
+  };
+
+  const images = [laurel(600, 1160, 300, 210), mark(600, 250, 96)];
+
+  // ---- typography ----
+  const serif  = (s, sz, w) => `${w} ${px(sz)}px 'EB Garamond', Georgia, serif`;
+  const sans   = (s, sz, w) => `${w} ${px(sz)}px 'Inter Tight', Inter, sans-serif`;
+
+  const center = (txt, y, font, col, ls) => {
+    x.font = font; x.fillStyle = col; x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+    if (ls) { x.letterSpacing = ls; }        // applied via save/restore below
+    x.fillText(txt, px(600), px(y));
+    x.letterSpacing = '0px';
+  };
+
+  center(CERT.org, 300, sans(28, 13, '600'), ink, '6px');
+  center(CERT.sub, 336, sans(28, 9.5, '400'), 'rgba(43,33,24,0.62)', '3px');
+
+  x.strokeStyle = gold; x.lineWidth = px(1);
+  x.beginPath(); x.moveTo(px(470), px(378)); x.lineTo(px(730), px(378)); x.stroke();
+  x.beginPath(); x.arc(px(600), px(378), px(3), 0, Math.PI * 2);
+  x.fillStyle = gold; x.fill();
+
+  center('CERTIFICATE', 470, serif(28, 15, '400'), 'rgba(43,33,24,0.7)', '9px');
+  center('OF EXCELLENCE', 528, serif(28, 54, '500'), ink, '3px');
+
+  center('is hereby awarded to', 610, serif(28, 21, 'italic'), 'rgba(43,33,24,0.72)', '0px');
+
+  x.font = serif(28, 62, '500');
+  x.fillStyle = ink; x.textAlign = 'center';
+  x.fillText(CERT.name, px(600), px(700));
+
+  // rule under the name
+  const nw = x.measureText(CERT.name).width;
+  x.strokeStyle = 'rgba(138,106,52,0.75)'; x.lineWidth = px(1.2);
+  x.beginPath(); x.moveTo(px(600) - nw / 2 - px(40), px(726));
+  x.lineTo(px(600) + nw / 2 + px(40), px(726)); x.stroke();
+
+  center(CERT.meta, 772, serif(28, 23, 'italic'), 'rgba(43,33,24,0.66)', '0px');
+
+  // ---- signatures ----
+  const sig = (name, role, right) => {
+    const bx = right ? 830 : 370;
+    const by = 1300;
+    x.font = serif(28, 40, 'italic');
+    x.fillStyle = ink; x.textAlign = 'center';
+    x.fillText(name, px(bx), px(by));
+
+    x.strokeStyle = 'rgba(43,33,24,0.65)'; x.lineWidth = px(0.8);
+    x.beginPath(); x.moveTo(px(bx - 130), px(by + 18)); x.lineTo(px(bx + 130), px(by + 18)); x.stroke();
+
+    x.font = sans(28, 10, '500');
+    x.fillStyle = 'rgba(43,33,24,0.6)';
+    x.letterSpacing = '4px';
+    x.fillText(role, px(bx), px(by + 42));
+    x.letterSpacing = '0px';
+  };
+  sig(CERT.sig1, CERT.role1, false);
+  sig(CERT.sig2, CERT.role2, true);
+
+  // ---- wax seal ----
+  const seal = (cx, cy, r) => {
+    const pts = 22, path = [];
+    for (let i = 0; i <= pts; i++) {
+      const a = (i / pts) * Math.PI * 2;
+      const rr = r * (0.92 + Math.random() * 0.08);
+      path.push(`${(cx + Math.cos(a) * rr).toFixed(1)},${(cy + Math.sin(a) * rr).toFixed(1)}`);
+    }
+    const grad = x.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
+    grad.addColorStop(0, '#c0392b');
+    grad.addColorStop(0.55, '#8e2a20');
+    grad.addColorStop(1, '#5e1a13');
+    x.fillStyle = grad;
+    x.beginPath();
+    x.moveTo(path[0].split(',')[0], path[0].split(',')[1]);
+    for (let i = 1; i < path.length; i++) {
+      const [ax, ay] = path[i].split(',').map(Number);
+      x.lineTo(ax, ay);
+    }
+    x.closePath(); x.fill();
+
+    x.strokeStyle = 'rgba(0,0,0,0.28)'; x.lineWidth = r * 0.08; x.stroke();
+    x.font = serif(28, r * 0.72, '500');
+    x.fillStyle = 'rgba(255,220,200,0.82)';
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('O', cx, cy + r * 0.04);
+    x.textBaseline = 'alphabetic';
+  };
+  seal(600, 1300, 46);
+
+  // ---- footer ----
+  center(CERT.dateLine, 1470, sans(28, 11, '500'), 'rgba(43,33,24,0.72)', '5px');
+  center(CERT.year, 1524, serif(28, 34, '400'), ink, '8px');
+  center('CERTIFICATE No. ' + CERT.ref, 1586, sans(28, 9, '400'), 'rgba(43,33,24,0.5)', '2px');
+
+  return { canvas: c, images };
+}
+
+/* ---------- 3. sheet geometry ---------- */
+function buildSheet(tex) {
+  const geo = new T.PlaneGeometry(2.1, 2.9, CFG.segX, CFG.segY);
+  const pos = geo.attributes.position;
+  const base = new Float32Array(pos.array);   // untouched positions
+
+  const mat = new T.MeshPhysicalMaterial({
+    map: tex,
+    side: T.DoubleSide,
+    roughness: 0.72,
+    metalness: 0.0,
+    clearcoat: 0.16,
+    clearcoatRoughness: 0.62,
+    sheen: 0.5,
+    sheenRoughness: 0.9,
+    sheenColor: new T.Color('#f5e9cf'),
+  });
+
+  // soft rim + contact touch-light injected into the standard shader
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uLightPos = { value: new T.Vector2(0.5, 0.5) };
+    sh.uniforms.uRim =      { value: 0.55 };
+
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `
+        #include <common>
+        uniform vec2 uLightPos;
+        varying vec2 vUv;
+      `)
+      .replace('#include <fog_vertex>', `
+        #include <fog_vertex>
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      `);
+
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `
+        #include <common>
+        uniform vec2 uLightPos;
+        uniform float uRim;
+        varying vec2 vUv;
+      `)
+      .replace('#include <dithering_fragment>', `
+        #include <dithering_fragment>
+        float d = distance(vUv, uLightPos);
+        float touch = smoothstep(0.34, 0.0, d);
+        gl_FragColor.rgb += touch * 0.14 * vec3(1.0, 0.94, 0.82);
+        float edge = 1.0 - smoothstep(0.0, 0.06, min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y)));
+        gl_FragColor.rgb += edge * uRim * vec3(0.10, 0.09, 0.07);
+      `);
+  };
+  mat.customProgramCacheKey = () => 'paperSheet';
+
+  const mesh = new T.Mesh(geo, mat);
+  return { mesh, base };
+}
+
+/* ---------- 4. renderer / scene / camera ---------- */
+const canvas = document.getElementById('gl');
+const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = T.sRGBEncoding;
+renderer.toneMapping = T.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const scene = new T.Scene();
+scene.background = new T.Color('#08080c');
+
+const camera = new T.PerspectiveCamera(32, 1, 0.1, 100);
+camera.position.set(0, 0, CFG.camZ);
+
+const pmrem = new T.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+const envTex = makeEnv();
+scene.environment = pmrem.fromEquirectangular(envTex).texture;
+
+const key = new T.DirectionalLight(0xfff2d8, 1.05);
+key.position.set(2.2, 3.0, 2.4);
+scene.add(key);
+
+const rim = new T.DirectionalLight(0x8ea2ff, 0.35);
+rim.position.set(-2.4, -1.2, 1.6);
+scene.add(rim);
+
+const amb = new T.AmbientLight(0xffffff, 0.25);
+scene.add(amb);
+
+const t0 = { x: 0 };                 // sheet target rotation
+let   displayRot = 0;                // smoothed current rotation
+const rot = { v: 0, d: 0 };           // angular velocity for throw physics
+
+/* ---------- 5. interaction (drag / throw / hover) ---------- */
+let dragging = false, lx = 0, moved = 0, lastMove = 0;
+const light = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5 };
+const P = () => ({ ...CFG.P ?? {}, });
+
+const onDown = (e) => {
+  dragging = true; moved = 0;
+  lx = e.clientX; lastMove = performance.now();
+  canvas.classList.add('grabbing');
+  canvas.setPointerCapture?.(e.pointerId);
+  rot.v = 0;
+};
+const onMove = (e) => {
+  const r = canvas.getBoundingClientRect();
+  light.tx = (e.clientX - r.left) / r.width;
+  light.ty = 1 - (e.clientY - r.top) / r.height;
+
+  if (!dragging) return;
+  const dx = e.clientX - lx;
+  lx = e.clientX;
+  moved += Math.abs(dx);
+
+  const now = performance.now();
+  const dt = Math.max(now - lastMove, 1);
+  lastMove = now;
+
+  const delta = dx / r.width * CFG.turnSpeed;
+  displayRot += delta;
+  rot.v = (delta / dt) * 16;          // px→deg/s, smoothed
+};
+const onUp = (e) => {
+  if (!dragging) return;
+  dragging = false;
+  canvas.classList.remove('grabbing');
+  try { canvas.releasePointerCapture?.(e.pointerId); } catch (_) {}
+};
+canvas.addEventListener('pointerdown', onDown);
+window.addEventListener('pointermove', onMove);
+window.addEventListener('pointerup', onUp);
+window.addEventListener('pointercancel', onUp);
+
+/* ---------- 6. loop ---------- */
+const clock = new T.Clock();
+let sheet = null;
+const word = document.getElementById('word');
+const hint = document.getElementById('hint');
+let hintHidden = false;
+
+function layout() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+
+  // frame the sheet: fit height on desktop, width on narrow screens
+  const sheetH = 2.9, sheetW = 2.1;
+  const vfov = camera.fov * Math.PI / 180;
+  const distH = (sheetH * 1.24) / (2 * Math.tan(vfov / 2));
+  const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+  const distW = (sheetW * 1.18) / (2 * Math.tan(hfov / 2));
+  camera.position.z = Math.max(distH, distW);
+
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+}
+addEventListener('resize', layout);
+
+/* ---------- 7. debug API ---------- */
+window.__sheet = {
+  turn: (d) => { t0.x += d; },
+  set: (d) => { t0.x = displayRot = d; },
+  get: () => displayRot,
+  snap: () => { t0.x = displayRot; rot.v = 0; },
+  light: (x, y) => { light.tx = x; light.ty = y; },
+  hint: () => { hintHidden = true; hint.style.opacity = '0'; },
+};
+
+/* ---------- 8. reduced motion ---------- */
+const rmq = matchMedia('(prefers-reduced-motion: reduce)');
+CFG.reduced = rmq.matches;
+rmq.addEventListener?.('change', (e) => { CFG.reduced = e.matches; });
+
+/* ---------- 9. cleanup ---------- */
+let disposed = false;
+function dispose() {
+  if (disposed) return;
+  disposed = true;
+  cancelAnimationFrame(window.__raf);
+  canvas.removeEventListener('pointerdown', onDown);
+  window.removeEventListener('pointermove', onMove);
+  window.removeEventListener('pointerup', onUp);
+  window.removeEventListener('pointercancel', onUp);
+  removeEventListener('resize', layout);
+  if (sheet) {
+    sheet.mesh.geometry.dispose();
+    sheet.mesh.material.dispose();
+  }
+  scene.environment?.dispose();
+  pmrem.dispose();
+  envTex.dispose();
+  renderer.dispose();
+}
+addEventListener('pagehide', dispose);
+
+/* ---------- 10. boot ---------- */
+async function boot() {
+  // let the display faces land before anything is rasterised into them
+  try {
+    await Promise.all([
+      document.fonts.load('400 16px "EB Garamond"'),
+      document.fonts.load('500 16px "EB Garamond"'),
+      document.fonts.load('italic 400 16px "EB Garamond"'),
+      document.fonts.load('600 16px "Inter Tight"'),
+      document.fonts.load('italic 500 16px "Inter Tight"'),
+    ]);
+    await document.fonts.ready;
+  } catch (_) { /* fall through with system faces */ }
+
+  const { canvas: texCanvas, images } = texture();
+
+  // ornaments are async SVG -> raster, so draw them once decoded
+  await Promise.all(images.map(i => i.img.decode().catch(() => {})));
+  const tx = texCanvas.getContext('2d');
+  for (const i of images) tx.drawImage(i.img, i.cx, i.cy, i.w, i.h);
+
+  const tex = new T.CanvasTexture(texCanvas);
+  tex.encoding = T.sRGBEncoding;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  tex.needsUpdate = true;
+
+  sheet = buildSheet(tex);
+  scene.add(sheet.mesh);
+  layout();
+
+  window.__raf = requestAnimationFrame(function animate() {
+    if (disposed) return;
+    window.__raf = requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.05);
+
+    if (!dragging) {
+      // inertia
+      if (Math.abs(rot.v) > 0.0004) {
+        displayRot += rot.v * dt;
+        rot.v *= 0.94;
+        t0.x = displayRot;
+      } else {
+        // settle to the nearest authored detent
+        const detent = Math.round(displayRot / (Math.PI / 2)) * (Math.PI / 2);
+        displayRot += (detent - displayRot) * Math.min(dt * 7, 1);
+        t0.x = displayRot;
+      }
+    }
+
+    const g = CFG.reduced ? 1 : Math.min(dt * 9, 1);
+    displayRot += (t0.x - displayRot) * (dragging ? 1 : g);
+
+    // vertex bend + fold
+    const pos = sheet.mesh.geometry.attributes.position;
+    const base = sheet.base;
+    for (let i = 0; i < pos.count; i++) {
+      const bx = base[i * 3], by = base[i * 3 + 1];
+      const edge = Math.max(0, Math.abs(bx) - 0.55) / 0.5;   // 0 centre → 1 edge
+      const fold = Math.sin(by * CFG.pull * 3.1) * CFG.fold * (0.25 + edge);
+      pos.array[i * 3 + 2] = base[i * 3 + 2] + fold + (Math.sin(bx * 2.2 + by * 1.4) * CFG.bend * edge);
+    }
+    pos.needsUpdate = true;
+    sheet.mesh.geometry.computeVertexNormals();
+
+    sheet.mesh.rotation.y = displayRot;
+    sheet.mesh.rotation.x = CFG.tilt + Math.sin(displayRot * 0.5) * 0.03;
+    sheet.mesh.position.x = Math.sin(displayRot) * CFG.pull * 0.08;
+
+    light.x += (light.tx - light.x) * Math.min(dt * 6, 1);
+    light.y += (light.ty - light.y) * Math.min(dt * 6, 1);
+    sheet.mesh.material.userData.light?.set(light.x, light.y);
+
+    if (word) {
+      word.style.opacity = String(0.13 - Math.min(Math.abs(displayRot), 1) * 0.07);
+    }
+    if (!hintHidden && Math.abs(displayRot) > 0.25) {
+      hintHidden = true; hint.style.opacity = '0';
+    }
+
+    renderer.render(scene, camera);
+  });
+}
+boot();
+</script>
+</body>
+</html>

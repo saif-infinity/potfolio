@@ -1,0 +1,364 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #030509;
+  --bg-2: #0a1118;
+  --fg: #ffffff;
+  --muted: #9ca3af;
+  --primary: #00ff41;
+  --hairline: rgba(255, 255, 255, 0.1);
+
+  /*
+   * Font stacks are declared here rather than via next/font/google because
+   * building would otherwise block on a network fetch for the font files.
+   * Both families are named first, so they render if installed locally.
+   * TODO(USER): to self-host properly, drop the .woff2 files into
+   * public/fonts/, add @font-face rules here, and point these vars at them.
+   */
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Fixed navbar is ~72px tall */
+  scroll-padding-top: 5rem;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body), Inter, ui-sans-serif, system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  /* Cold green cyber haze on near-black. Kept on body (not as a Tailwind color token)
+     so opacity modifiers like bg-bg/50 keep working. */
+  background-image:
+    radial-gradient(1200px 700px at 18% 8%, rgba(0, 255, 65, 0.07) 0%, transparent 60%),
+    radial-gradient(1000px 620px at 82% 78%, rgba(45, 212, 191, 0.06) 0%, transparent 62%),
+    radial-gradient(900px 520px at 55% 45%, rgba(74, 222, 128, 0.05) 0%, transparent 65%),
+    linear-gradient(180deg, #030509 0%, #060b0e 45%, #030509 100%);
+  background-attachment: fixed;
+}
+
+/* --- Film grain ------------------------------------------------------- */
+/* Real fractal noise, not a flat texture. Fixed overlay, never interactive. */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 700ms steps(1) infinite;
+}
+
+@keyframes grain-shift {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-2%, 1%); }
+  50%  { transform: translate(1%, -2%); }
+  75%  { transform: translate(-1%, -1%); }
+  100% { transform: translate(2%, 2%); }
+}
+
+/* --- Vignette --------------------------------------------------------- */
+.vignette::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 45%,
+    rgba(0, 0, 0, 0.55) 82%,
+    rgba(0, 0, 0, 0.92) 100%
+  );
+}
+
+/* --- Liquid glass ----------------------------------------------------- */
+/* Single source of truth for every glass surface on the site (section
+   cards, navbar, mobile sheet, hero social pill). Components reference
+   `.glass` and keep their own `border border-hairline` +
+   `hover:border-primary/*` utilities: this class deliberately sets NO border
+   (so the Tailwind hover-border intent keeps working untouched) and NO
+   position (the navbar header is `fixed` — a `relative` here would win the
+   cascade over the layered utility and break it). The lit rim is a vertical
+   sheen gradient plus an inset top highlight, so the edge brightens along
+   one axis without a mask-ring pseudo-element or extra markup. Fill is cold
+   dark green/teal — never warm — and stays dark enough for `text-fg`
+   / `text-muted` contrast. Static material: no transitions or animations, so
+   no reduced-motion kill-switch is needed (the cards' own
+   `transition-colors` is already covered by the block below). */
+.glass {
+  --glass-fill: rgba(8, 14, 18, 0.45);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 22%, transparent 40%),
+    linear-gradient(135deg, rgba(0, 255, 65, 0.06) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(45, 212, 191, 0.05) 100%),
+    var(--glass-fill);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  box-shadow:
+    0 24px 60px -20px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 255, 65, 0.07);
+}
+
+/* Near-opaque variant for the mobile sheet: reuses the single blur
+   definition above, only densifies the fill so menu text stays legible
+   over page content. */
+.glass-strong {
+  --glass-fill: rgba(6, 10, 14, 0.94);
+}
+
+.glass-hover {
+  --glass-fill: rgba(10, 20, 16, 0.55);
+  border-color: rgba(0, 255, 65, 0.5);
+}
+
+/* Opaque warm fallback where backdrop-filter is unsupported: solid surface
+   instead of an unreadable translucent one. No filter declared here, so the
+   live material above stays the single definition point. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: #0b1218;
+    box-shadow:
+      0 24px 60px -20px rgba(0, 0, 0, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  .glass-strong {
+    background: #060a0e;
+  }
+}
+
+/* Fade the bottom of the portrait into the page background. */
+.mask-portrait {
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 58%, transparent 96%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 58%, transparent 96%);
+}
+
+.text-gradient-primary {
+  background: linear-gradient(100deg, #00ff41 0%, #5cff7a 40%, #2dd4bf 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* --- CRT tube --------------------------------------------------------- */
+/* Canonical host rules, from the source stylesheet. The WebGL composite draws
+   the tube; this only sizes the host and its canvas. */
+.threeui-background {
+  position: relative;
+  isolation: isolate;
+  background: #030304;
+}
+
+.threeui-background > canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- CRT page --------------------------------------------------------- */
+/* Full-viewport stage for the dedicated /crt route. The tube is the content
+   here, not a backdrop: no blend mode, no edge mask, no legibility veil, so
+   the canvas renders at full strength and the component's own inline
+   background carries the page. `.threeui-background` is position: relative,
+   so the stage supplies the viewport sizing and the component fills it. */
+.crt-stage {
+  position: relative;
+  height: 100svh;
+  min-height: 100svh;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.crt-stage > .threeui-background {
+  position: absolute;
+  inset: 0;
+}
+
+/* --- CRT opener ------------------------------------------------------- */
+/* Permanent first section of `/`. In normal document flow (not fixed): full
+   viewport, scrolls away like any other section. Same no-grade treatment as
+   the /crt room — the canvas renders at full strength and the component's
+   own inline background carries the section. */
+.crt-opener {
+  position: relative;
+  height: 100svh;
+  min-height: 100svh;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+  /* Named timeline source for the opener effects below. This indirection is
+     load-bearing, not cosmetic: the section's own `overflow: hidden` makes it
+     a scroll container, so an *anonymous* view() on any descendant would bind
+     to this box — inside which nothing ever moves — freezing every effect.
+     Bound to the section itself, the timeline tracks its passage through the
+     document scroller instead. Do not remove without rechecking the motion
+     harnesses. */
+  view-timeline-name: --opener;
+}
+
+/* Scope that lets descendants reference the named section timelines.
+   The subjects (.crt-opener, #top) are both inside <main>, so one scope
+   covers every consumer. */
+main {
+  timeline-scope: --opener --hero;
+}
+
+/* The hero is the bloom's timeline subject for the same reason as above:
+   the hero also clips overflow, so the portrait's own anonymous timeline
+   would read permanently fully-entered. #top is stable (navbar + cue link
+   target), so it carries the name. */
+#top {
+  view-timeline-name: --hero;
+}
+
+.crt-opener > .threeui-background {
+  position: absolute;
+  inset: 0;
+  /* Scroll-linked drift so the leave feels weighty: the tube travels a
+     fraction of page scroll. Scale hides the edges the drift would expose. */
+  animation: crt-drift linear both;
+  animation-timeline: --opener;
+  animation-range: cover 0% cover 100%;
+  will-change: transform;
+}
+
+/* --- CRT opener transition -------------------------------------------- */
+/* Scroll-linked, transform/opacity only: compositor-friendly, no scroll
+   listeners, no layout reads — the browser drives each animation from a
+   named section timeline. All opener effects share --opener, whose
+   cover span is the section's full passage ([-H, +H] for a 100svh section,
+   so page load sits at exactly cover 50%); the bloom uses --hero.
+   Cover-based ranges are monotonic across the whole passage, so no effect
+   can strand in a before/after phase while its subject is on screen.
+   Keyframes run `linear` because scroll progress replaces easing; the motion
+   language (slow fades, small translations, the scroll-hint lift) matches
+   the existing animate-* family. Every class here is repeated in the
+   prefers-reduced-motion kill-switch below with `animation: none`, which is
+   what actually neutralizes timeline-driven progress (the generic duration
+   nuke does not apply to scroll-driven animations). */
+@keyframes crt-drift {
+  from { transform: translate3d(0, -3.5%, 0) scale(1.07); }
+  to { transform: translate3d(0, 3.5%, 0) scale(1.07); }
+}
+@keyframes crt-cue-out {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translate(-50%, -14px); }
+}
+@keyframes crt-scrim-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes crt-melt-in {
+  from { opacity: 0.75; }
+  to { opacity: 1; }
+}
+@keyframes hero-bloom {
+  from { opacity: 0.35; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Top scrim hands navbar legibility back to the navbar's own blur
+   background almost as soon as scrolling starts. */
+.crt-scrim-top {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.25) 55%, transparent 100%);
+  animation: crt-scrim-out linear both;
+  animation-timeline: --opener;
+  animation-range: cover 48% cover 62%;
+}
+
+/* Bottom melt: a tall multi-stop eased ramp (not a two-stop fade) that
+   deepens through the leave, so the opaque canvas dissolves instead of
+   cutting against the hero's near-black. */
+.crt-melt {
+  height: 34vh;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(3, 5, 9, 0.28) 38%,
+    rgba(3, 5, 9, 0.62) 68%,
+    rgba(3, 5, 9, 0.9) 88%,
+    #030509 100%);
+  opacity: 0.75;
+  animation: crt-melt-in linear both;
+  animation-timeline: --opener;
+  animation-range: cover 48% cover 92%;
+}
+
+/* Cue lifts and fades early in the leave, echoing its scroll-hint bob. */
+.crt-cue {
+  animation: crt-cue-out linear both;
+  animation-timeline: --opener;
+  animation-range: cover 48% cover 68%;
+}
+
+/* Portrait wrapper blooms as the hero arrives, pairing with the framer
+   whileInView rise on the column itself so the eye lands on the figure. */
+.hero-bloom {
+  animation: hero-bloom linear both;
+  animation-timeline: --hero;
+  animation-range: cover 0% cover 40%;
+}
+
+/* --- Scrollbar -------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: #030509;
+}
+::-webkit-scrollbar-thumb {
+  background: #00ff41;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5cff7a;
+}
+
+/* --- Accessibility --------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .grain::after,
+  .animate-float,
+  .animate-drift,
+  .animate-pulse-glow,
+  .animate-scroll-hint,
+  .threeui-background,
+  .threeui-background canvas,
+  .crt-opener > .threeui-background,
+  .crt-cue,
+  .crt-scrim-top,
+  .crt-melt,
+  .hero-bloom {
+    animation: none !important;
+  }
+}

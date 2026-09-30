@@ -1,0 +1,117 @@
+/* VALENCE CORE kinetic plate — container rules for KineticButton.
+   The WebGL shader paints the plate itself; this only sizes the host,
+   holds the rounded-rect form, and styles the DOM label + fallback. */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  /* Plate form: rounded rect (demo used rounded-[18px]), radius 0.14 of
+     height lives in-shader; this DOM radius frames the canvas box. */
+  border-radius: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  isolation: isolate;
+  text-decoration: none;
+  /* Hover lift from the source: translateY(-2px); active press below. */
+  transition: transform 180ms ease, box-shadow 240ms ease, filter 240ms ease;
+  will-change: transform;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.btn:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 3px;
+}
+
+/* Size variants: nav (small) vs hero/contact (large). The shader self-sizes
+   via u_res, so only the DOM box + type scale here. */
+.sizeLg {
+  padding: 0.875rem 1.75rem; /* px-7 py-3.5 */
+  font-size: 0.75rem; /* text-xs */
+}
+
+.sizeSm {
+  padding: 0.5rem 1.25rem; /* px-5 py-2 */
+  font-size: 11px;
+}
+
+.gl {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Secondary tone shares the same kinetic plate form, quieted with a dark
+   veil so two plates side by side keep a primary/secondary hierarchy. */
+.ghostVeil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(4, 8, 12, 0.42);
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+
+.toneGhost:hover .ghostVeil {
+  opacity: 0.72;
+}
+
+/* Source label: tracking 0.3em + indent, pale ice text with cyan glow. */
+.label {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #e0f7f8;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(0, 210, 255, 0.6), 0 1px 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+.label svg,
+.label :global(svg) {
+  pointer-events: none;
+}
+
+/* WebGL fallback: solid chamber + cyan ring shadow in the site palette. */
+.btn[data-gl-fallback="true"] {
+  background: #06222b;
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.55), 0 0 24px -6px rgba(0, 229, 255, 0.45);
+}
+
+.btn[data-gl-fallback="true"] .gl,
+.btn[data-gl-fallback="true"] .ghostVeil {
+  display: none;
+}
+
+.toneSolid[data-gl-fallback="true"] {
+  background: linear-gradient(180deg, #0a3a46 0%, #06222b 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .ghostVeil {
+    transition: none;
+  }
+  .btn:hover,
+  .btn:active {
+    transform: none;
+  }
+}
