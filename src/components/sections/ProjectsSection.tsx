@@ -10,6 +10,12 @@ import {
 import { motion } from "framer-motion";
 
 export function ProjectsSection() {
+  const featured = site.projects[0];
+  const featuredLink =
+    featured && "link" in featured && typeof featured.link === "string"
+      ? featured.link
+      : "https://github.com/saif-infinity/projet-soc-ips-siem-xdr-";
+
   return (
     <section
       id="projects"
@@ -23,6 +29,44 @@ export function ProjectsSection() {
         />
 
         <RevealGroup className="space-y-10 lg:space-y-16">
+          {/* Featured showcase link: full-width strip pinned to the top of the
+              projects stack, directly above the first card. Same glass +
+              border-hairline material as the cards so it reads as part of the
+              stack, with the shared hover:border-primary/50 affordance. */}
+          <motion.a
+            variants={revealItem}
+            href={featuredLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open the Sentinel Bridge SOC platform repository on GitHub (opens in a new tab)"
+            className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-hairline glass p-4 transition-colors duration-300 hover:border-primary/50 hover:bg-primary/[0.04] sm:gap-5 sm:p-5"
+          >
+            <span
+              aria-hidden="true"
+              className="absolute inset-y-4 left-0 w-[3px] rounded-full bg-primary"
+            />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary group-hover:text-white">
+              <Icon name="github" className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] font-semibold tracking-widest2 text-muted">
+                FEATURED REPOSITORY — SENTINEL BRIDGE
+              </span>
+              <span className="mt-1 block truncate font-display text-sm font-bold tracking-tight text-fg sm:text-base">
+                github.com/saif-infinity/projet-soc-ips-siem-xdr-
+              </span>
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary">
+              <span className="hidden underline-offset-4 group-hover:underline sm:inline">
+                Open
+              </span>
+              <Icon
+                name="arrowUpRight"
+                className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+              />
+            </span>
+          </motion.a>
+
           {site.projects.map((project, i) => {
             const flipped = i % 2 === 1;
             return (
@@ -70,10 +114,10 @@ export function ProjectsSection() {
                     ))}
                   </ul>
 
-                  {"link" in project && project.link && (
+                  {i !== 0 && "link" in project && project.link && (
                     <div className="relative mt-6 flex items-center gap-3">
                       <a
-                        href={(project as any).link}
+                        href={project.link}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="group/link inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-primary transition-colors duration-300 hover:bg-primary hover:text-white"

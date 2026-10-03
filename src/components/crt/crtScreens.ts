@@ -1,6 +1,6 @@
 /* Screen painters for the CRT variants. Each one draws a complete picture into an
    offscreen 2D canvas that the WebGL pass then curves, scans, and grades. The
-   authored ZION terminal stays in crtRenderer.ts; these are the added styles. */
+   authored boot terminal stays in crtRenderer.ts; these are the added styles. */
 
 export type CrtVariant = "terminal" | "cinematic" | "blue-screen" | "nintendo";
 
