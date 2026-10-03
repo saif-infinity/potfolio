@@ -69,6 +69,20 @@ export function ProjectsSection() {
                       </li>
                     ))}
                   </ul>
+
+                  {"link" in project && project.link && (
+                    <div className="relative mt-6 flex items-center gap-3">
+                      <a
+                        href={(project as any).link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group/link inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-primary transition-colors duration-300 hover:bg-primary hover:text-white"
+                      >
+                        View Project
+                        <Icon name="arrowUpRight" className="h-3.5 w-3.5 transition-transform duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5" />
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 <div

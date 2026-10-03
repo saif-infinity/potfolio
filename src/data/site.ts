@@ -155,11 +155,12 @@ export const site = {
 
   projects: [
     {
-      title: "Sentinel SOC",
+      title: "Sentinel Bridge - SOC/IPS/SIEM/XDR Platform",
       blurb:
-        "A customisable security operations centre platform assembled from open components — Wazuh, Suricata and Vector feeding PostgreSQL, with a FastAPI and React console for detections and incident response.",
-      tags: ["Wazuh", "Suricata", "FastAPI", "React", "Docker"],
+        "Unified multi-tenant SOC platform with FastAPI backend, dual React frontends (SOC + Admin), RBAC, face recognition, case management, playbook automation, threat intel enrichment, and MITRE ATT&CK mapping. TimescaleDB + Celery + Redis for scalable detection & response.",
+      tags: ["FastAPI", "React", "TypeScript", "PostgreSQL", "TimescaleDB", "Celery", "Redis", "Docker", "Wazuh", "Suricata"],
       icon: "terminal" as IconName,
+      link: "https://github.com/saif-infinity/projet-soc-ips-siem-xdr-",
     },
     {
       title: "Port Sniffer & Packet Analyser",
